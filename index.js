@@ -37,6 +37,21 @@ app.get( '/studio' , async (req,res)=>{
   console.log(result)
 })
 
+app.get( '/studio/:category' , async (req,res)=>{
+  const { category } = req.params;
+  const categoryData = Studio.find({category:{$eq:category}})
+  const result = await categoryData.toArray();
+  res.send(result)
+})
+
+
+app.get( '/explore-studio' , async (req,res)=>{
+  const coursor = Studio.find({}).sort({ category : -1}).limit(6)
+  const result = await coursor.toArray()
+  res.send(result)
+  console.log(result)
+})
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`)
 })
