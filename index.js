@@ -21,6 +21,7 @@ export async function connectToMongoDB() {
 const Database = await connectToMongoDB()
 const Client = Database.db("RisingStar");
 const Studio = Client.collection("studio");
+const Bookings = Client.collection("bookings");
 
 
 app.use(cors())
@@ -36,13 +37,63 @@ app.get( '/studio' , async (req,res)=>{
   res.send(result)
  
 })
-// http://localhost:5000/studio
-app.post( '/studio' , async (req,res)=>{
-  const StudioData = req.body;
-  const result = await Studio.insertOne(StudioData);
+
+// http://localhost:5000/studio/email
+
+
+app.get( '/studio/:email' , async (req,res)=>{
+  const {email} = req.params;
+  const coursor = Studio.find({hostEmail:{$eq:email}});
+  const result = await coursor.toArray()
   res.send(result)
-  console.log(result)
+ 
 })
+// http://localhost:5000/studio
+app.post("/studio", async (req, res) => {
+  try {
+    const StudioData = req.body;
+
+    const result = await Studio.insertOne(StudioData);
+
+    res.status(201).send({
+      success: true,
+      message: "Studio added successfully",
+      result,
+    });
+
+    console.log(result);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to add studio",
+    });
+  }
+});
+// http://localhost:5000/bookings
+app.post("/bookings", async (req, res) => {
+  try {
+    const StudioData = req.body;
+
+    const result = await Bookings.insertOne(StudioData);
+
+    res.status(201).send({
+      success: true,
+      message: "Studio added successfully",
+      result,
+    });
+
+    console.log(result);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to add Bookings",
+    });
+  }
+});
 
 app.get( '/studio/:category' , async (req,res)=>{
   const { category } = req.params;
@@ -67,6 +118,11 @@ app.get( '/explore-studio' , async (req,res)=>{
 
 })
 
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}`)
-})
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+  })
+}
+
+
+export default app;
