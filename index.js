@@ -126,6 +126,17 @@ app.post("/bookings", async (req, res) => {
   }
 });
 
+
+// http://localhost:5000/bookings/email
+
+app.get( '/bookings/:email' , async (req,res)=>{
+  const {email} = req.params;
+  const coursor = Bookings.find({hostEmail:{$eq:email}});
+  const result = await coursor.toArray()
+  res.send(result)
+ 
+})
+
 app.get( '/studio/:category' , async (req,res)=>{
   const { category } = req.params;
   const categoryData = await Studio.find({category:{$eq:category}})
