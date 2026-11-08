@@ -71,6 +71,37 @@ app.post("/studio", async (req, res) => {
     });
   }
 });
+
+app.patch("/studio/:id", async (req, res) => {
+  const {id} =  req.params;
+  try {
+    const StudioData = req.body;
+
+    const result = await Studio.updateOne({_id: new ObjectId(id)},{$set: StudioData} , {$upsert:true});
+
+    res.status(201).send({
+      success: true,
+      message: "Studio added successfully",
+      result,
+    });
+
+    console.log(result);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to add studio",
+    });
+  }
+});
+
+app.delete("/studio/:id",async (req,res)=>{
+  const {id}= req.params;
+  const result = await Studio.deleteOne({_id: new ObjectId(id)})
+  res.send(result)
+})
+
 // http://localhost:5000/bookings
 app.post("/bookings", async (req, res) => {
   try {
