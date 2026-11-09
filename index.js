@@ -27,6 +27,35 @@ const Bookings = Client.collection("bookings");
 app.use(cors())
 app.use(express.json())
 
+
+const VerifyToken=async (req,res,next)=>{
+const authHeader = req.headers.authorization
+
+if(!authHeader){
+  return res.status(401).send({msg: 'Unauthorized'})
+}
+
+const token = authHeader.split(' ')[1]
+if(!token){
+  return res.status(401).send({ msg: 'Unauthorized'})
+}
+
+const JWKS = createRemoteJWKSet(
+  new URL('http://localhost:3000/api/auth/jwks')
+);
+ try {
+  const { payload } = await jwtVerify(token,JWKS);
+  next();
+ } catch (error) {
+  return res.status(500).send({msg: "Your Token isnt Verifyed"})
+ }
+}
+
+
+
+
+
+
 app.get('/', (req, res) => {
   res.send('This is The Rising Star Backend')
 })
@@ -102,7 +131,7 @@ app.delete("/studio/:id",async (req,res)=>{
   res.send(result)
 })
 
-// http://localhost:5000/bookings
+
 app.post("/bookings", async (req, res) => {
   try {
     const StudioData = req.body;
@@ -127,7 +156,7 @@ app.post("/bookings", async (req, res) => {
 });
 
 
-// http://localhost:5000/bookings/email
+
 
 app.get( '/bookings/:email' , async (req,res)=>{
   const {email} = req.params;
@@ -136,6 +165,68 @@ app.get( '/bookings/:email' , async (req,res)=>{
   res.send(result)
  
 })
+
+app.patch("/bookings/:id", async (req, res) => {
+  const {id} =  req.params;
+  try {
+    const BookingData = req.body;
+
+    const result = await Bookings.updateOne({_id: new ObjectId(id)},{$set: BookingData});
+
+    res.status(201).send({
+      success: true,
+      message: "Studio added successfully",
+      result,
+    });
+
+    console.log(result);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to add studio",
+    });
+  }
+});
+app.post("/bookings", async (req, res) => {
+  try {
+    const bookingData = req.body;
+
+    // 1. Check existing confirmed booking
+    const conflict = await Bookings.findOne({
+      studioId: bookingData.studioId,
+      status: "Confirmed",
+      startTime: { $lt: bookingData.endTime },
+      endTime: { $gt: bookingData.startTime },
+    });
+
+    // 2. Reject if booking overlaps
+    if (conflict) {
+      return res.status(409).send({
+        success: false,
+        message: "This studio is already booked for the selected time.",
+      });
+    }
+
+    // 3. Save new booking
+    const result = await Bookings.insertOne(bookingData);
+
+    res.status(201).send({
+      success: true,
+      message: "Booking created successfully!",
+      insertedId: result.insertedId,
+    });
+
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: "Failed to create booking.",
+    });
+  }
+});
+
+
 
 app.get( '/studio/:category' , async (req,res)=>{
   const { category } = req.params;
